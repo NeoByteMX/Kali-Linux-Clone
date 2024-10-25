@@ -1,0 +1,68 @@
+#cloud-config
+autoinstall:
+  version: 1
+  identity:
+    hostname: attackbox-ubuntu
+    username: attacker
+    password: "$6$rounds=4096$salt$hashed_password"  # Reemplaza con el hash de tu contraseña
+  locale: en_US
+  timezone: UTC
+
+  # Particiones
+  storage:
+    layout:
+      name: lvm
+      match: largest
+    
+  # Paquetes básicos y herramientas de pentesting
+  packages:
+    - nmap
+    - john
+    - gobuster
+    - nikto
+    - netcat
+    - hydra
+    - enum4linux
+    - hashcat
+    - python3
+    - python3-pip
+    - build-essential
+    - libssl-dev
+    - libffi-dev
+    - python3-dev
+    - openvpn
+    - binwalk
+    - curl
+    - xrdp  # Acceso remoto
+
+  # Configuración de Snaps
+  snaps:
+    - name: burpsuite
+      classic: true
+    - name: ghidra
+      classic: true
+
+  # Script de instalación y configuración adicional
+  late-commands:
+    # Actualiza paquetes y configura herramientas
+    - "curtin in-target --target=/target -- apt-get update"
+    - "curtin in-target --target=/target -- apt-get upgrade -y"
+    - "curtin in-target --target=/target -- bash -c 'curl https://raw.githubusercontent.com/rapid7/metasploit-omnibus/master/config/templates/metasploit-framework-wrappers/msfupdate.erb | bash'"
+    - "curtin in-target --target=/target -- pip3 install impacket"
+
+    # Configura alias
+    - "echo 'alias ll=\"ls -la\"' >> /target/home/attacker/.bashrc"
+    - "echo 'alias msf=\"msfconsole\"' >> /target/home/attacker/.bashrc"
+
+    # Mensaje de configuración completada
+    - "echo 'Configuración completada. Ubuntu está configurado como AttackBox.' > /target/etc/motd"
+  
+  # Deshabilitar autologin después de la instalación
+  user-data:
+    disable_root: false
+    ssh_authorized_keys:
+      - "ssh-rsa AAAAB3...your_public_key"
+
+  ssh:
+    install-server: true
+    allow-pw: true
